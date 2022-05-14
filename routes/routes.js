@@ -29,20 +29,60 @@ routes.get("/recipes", (_req, res) => {
 
 // get specific recipe details
 
-routes.get("recipes/details/:name", (req,res)=>{
-    data=readData();
-    const selected = data.recipes.find((e) => {
-      e.name===req.params.name;
-    });
-    if(!selected){
-        return res.status(404).send("Recipe not found.");
-    };
-    const details = {
-      ingredients: selected.ingredients,
-      numSteps: selected.instructions.length,
-    };
-    console.log(details);
-    res.json(details);
+routes.get("/recipes/details/:name", (req, res) => {
+  data = readData();
+
+  const selected = data.recipes.find(
+    (element) => element.name === req.params.name
+  );
+  console.log(selected);
+  if (!selected) {
+    return res.send({});
+  }
+
+  const details = {
+    ingredients: selected.ingredients,
+    numSteps: selected.instructions.length,
+  };
+  res.json(details);
+});
+
+// validations middleware to check recipes have name,instructions, and ingredients.
+const addRecipe = (req, res, next) => {
+  if (!req.body.name || !req.body.instructions || !req.body.ingredients) {
+    res.status(400).send("Please add name, ingredients, and instructions.");
+  } else {
+    next();
+  }
+};
+
+// post route to add recipe
+routes.post("/recipes", addRecipe, (req, res) => {
+  const data = readData();
+  const { name } = req.body;
+
+  const selected = data.recipes.find((element) => element.name === name);
+  console.log(selected);
+  if (selected) {
+    return res.status(400).send("Recipe already exists.");
+  }
+  data.recipes.push(req.body);
+  writeData(data);
+  res.status(201).send();
+});
+
+// put request
+routes.put("/recipes", (req, res) => {
+  const data = readData();
+  const selected = data.recipes.find(
+    (element) => element.name === req.body.name
+  );
+  if(!selected){
+    res.status(404).send("Recipe does not exist.");
+  };
+  data.recipes.splice(data.recipes.indexOf(selected),1,req.body);
+  writeData(data);
+  res.status(204).send();
 });
 
 module.exports = routes;
